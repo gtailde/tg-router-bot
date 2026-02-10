@@ -89,6 +89,7 @@ const stmts = {
   // Users
   getUserByTgId: db.prepare('SELECT * FROM users WHERE telegram_id = ?'),
   getUserByUsername: db.prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?)'),
+  getPlaceholderByUsername: db.prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND telegram_id IS NULL'),
   insertUser: db.prepare(`
     INSERT INTO users (telegram_id, username, first_name, role)
     VALUES (@telegram_id, @username, @first_name, @role)
@@ -298,13 +299,11 @@ function addUserByUsername(username, role = 'user') {
 
 function linkUserTgId(telegramId, username, firstName) {
   // When user sends /start, check if there's a placeholder row by username
-  const clean = (username || '').toLowerCase();
-  if (clean) {
-    const placeholder = db.prepare('SELECT * FROM users WHERE LOWER(username) = ? AND telegram_id IS NULL').get(clean);
-    if (placeholder) {
-      stmts.updateUserTgId.run({ telegram_id: telegramId, first_name: firstName, id: placeholder.id });
-      return stmts.getUserByTgId.get(telegramId);
-    }
+  if (!username) return null;
+  const placeholder = stmts.getPlaceholderByUsername.get(username);
+  if (placeholder) {
+    stmts.updateUserTgId.run({ telegram_id: telegramId, first_name: firstName, id: placeholder.id });
+    return stmts.getUserByTgId.get(telegramId);
   }
   return null;
 }

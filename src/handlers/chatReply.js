@@ -35,9 +35,6 @@ async function handleChatReply(ctx) {
     stmts.setTicketStatus.run({ status: 'in_progress', id: ticket.id });
   }
 
-  // Touch updated_at
-  stmts.setTicketStatus.run({ status: ticket.status === 'open' ? 'in_progress' : ticket.status, id: ticket.id });
-
   // Save the reply as a ticket message for further reply tracking
   stmts.insertTicketMsg.run({
     ticket_id: ticket.id,

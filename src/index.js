@@ -44,8 +44,7 @@ bot.use(session({
 // ==================== Auth middleware ==================== //
 
 bot.use(async (ctx, next) => {
-  // Only handle private chats for menu logic
-  // Group messages go straight to chatReply handler
+  // Group messages go straight to chatReply handler — no auth needed
   if (ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup') {
     return next();
   }
@@ -56,39 +55,35 @@ bot.use(async (ctx, next) => {
   const username = ctx.from.username || null;
   const firstName = ctx.from.first_name || null;
 
-  // Determine role: if in ADMIN_IDS → admin
-  const role = ADMIN_IDS.includes(tgId) ? 'admin' : 'user';
-
-  // Try to link placeholder user (added by admin via username)
-  let user = linkUserTgId(tgId, username, firstName);
+  // Fast path: check if user already in DB
+  let user = stmts.getUserByTgId.get(tgId);
 
   if (!user) {
-    // Check if user exists in DB
-    user = stmts.getUserByTgId.get(tgId);
+    // Try to link placeholder user (added by admin via username)
+    user = linkUserTgId(tgId, username, firstName);
   }
 
-  if (user) {
-    // Update metadata
-    stmts.updateUserMeta.run({ username, first_name: firstName, telegram_id: tgId });
-    // If they're in ADMIN_IDS, ensure role is admin
-    if (ADMIN_IDS.includes(tgId) && user.role !== 'admin') {
-      stmts.setUserRole.run({ role: 'admin', telegram_id: tgId });
-      user.role = 'admin';
-    }
-    user = stmts.getUserByTgId.get(tgId);
-  } else {
-    // User is not in DB — check if they're allowed (known) OR are an admin
+  if (!user) {
+    // Not in DB — only allow ADMIN_IDS
     if (ADMIN_IDS.includes(tgId)) {
       user = getOrCreateUser(tgId, username, firstName, 'admin');
     } else {
-      // Unknown user — check if there's a placeholder with their username
-      // If not, they're not registered
-      // Send a "not registered" message
       if (ctx.message?.text === '/start') {
         await ctx.reply('⛔ Ви не зареєстровані в системі.\nЗверніться до адміністратора.');
       }
       return; // block
     }
+  }
+
+  // Update metadata only if changed
+  if (user.username !== username || user.first_name !== firstName) {
+    stmts.updateUserMeta.run({ username, first_name: firstName, telegram_id: tgId });
+  }
+
+  // Ensure ADMIN_IDS have admin role
+  if (ADMIN_IDS.includes(tgId) && user.role !== 'admin') {
+    stmts.setUserRole.run({ role: 'admin', telegram_id: tgId });
+    user.role = 'admin';
   }
 
   ctx.session.user = user;
