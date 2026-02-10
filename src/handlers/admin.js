@@ -732,7 +732,7 @@ async function showTopicDetail(ctx, topicId) {
   ctx.session.draft.detailTopic = topic;
   ctx.session.state = 'admin:topics:detail';
 
-  const chatInfo = topic.chat_title ? `💬 ${topic.chat_title}` : '⚠️ не призначено';
+  const chatInfo = topic.chat_title ? topic.chat_title : '⚠️ не призначено';
   const devInfo = devs.length
     ? devs.map(d => `  @${d.username || d.telegram_id || d.id} (${d.display_name || d.first_name || '—'})`).join('\n')
     : '  не призначено';
