@@ -72,6 +72,8 @@ async function handleAdmin(ctx) {
       return handleTopicAddDev(ctx, text);
     case 'admin:topics:remove:dev':
       return handleTopicRemoveDev(ctx, text);
+    case 'admin:topics:edit:desc':
+      return handleTopicEditDesc(ctx, text);
 
     // -- Chats -- //
     case 'admin:chats':
@@ -716,6 +718,17 @@ async function handleTopicDetail(ctx, text) {
     return true;
   }
 
+  // Edit description button
+  if (text === '✏️ Змінити опис') {
+    ctx.session.state = 'admin:topics:edit:desc';
+    const currentDesc = ctx.session.draft?.detailTopic?.description;
+    await ctx.reply(
+      `Поточний опис: ${currentDesc || '(без опису)'}\n\nВведіть новий опис (або «-» щоб очистити):`,
+      { reply_markup: kb.CANCEL_KB }
+    );
+    return true;
+  }
+
   // Select topic from list — show detail
   const name = text.replace(/^📂\s*/, '');
   const topics = stmts.listTopics.all();
@@ -738,6 +751,7 @@ async function showTopicDetail(ctx, topicId) {
     : '  не призначено';
 
   const detailKb = new (require('grammy').Keyboard)();
+  detailKb.text('✏️ Змінити опис').row();
   detailKb.text('💬 Призначити чат').row();
   detailKb.text('👨‍💻 Додати розробника').row();
   if (devs.length) detailKb.text('👨‍💻 Прибрати розробника').row();
@@ -753,6 +767,17 @@ async function showTopicDetail(ctx, topicId) {
     { parse_mode: 'HTML', reply_markup: detailKb }
   );
   return true;
+}
+
+async function handleTopicEditDesc(ctx, text) {
+  if (text === '❌ Скасувати') {
+    return showTopicDetail(ctx, ctx.session.draft.detailTopic.id);
+  }
+  const desc = text === '-' ? null : text;
+  const topicId = ctx.session.draft.detailTopic.id;
+  stmts.updateTopicDesc.run({ description: desc, id: topicId });
+  await ctx.reply(desc ? `✅ Опис оновлено.` : `✅ Опис очищено.`);
+  return showTopicDetail(ctx, topicId);
 }
 
 async function handleTopicAssignChat(ctx, text) {

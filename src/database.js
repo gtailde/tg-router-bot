@@ -130,6 +130,7 @@ const stmts = {
     ORDER BY t.name
   `),
   setTopicChat: db.prepare('UPDATE topics SET chat_id = @chat_id WHERE id = @id'),
+  updateTopicDesc: db.prepare('UPDATE topics SET description = @description WHERE id = @id'),
 
   // Topic developers
   listTopicDevs: db.prepare(`
