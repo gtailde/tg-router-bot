@@ -51,7 +51,8 @@ async function handleChatReply(ctx) {
   try {
     await ctx.api.sendMessage(
       ticket.author_tg_id,
-      `💬 <b>Відповідь на тікет #${ticket.id}</b>\n\n` +
+      `💬 <b>Відповідь на тікет #${ticket.id}</b>\n` +
+      `📂 ${ticket.title}\n\n` +
       `🗣 ${replierName}:\n${replyText}`,
       { parse_mode: 'HTML' }
     );
