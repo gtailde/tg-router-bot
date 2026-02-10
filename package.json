@@ -1,0 +1,21 @@
+{
+  "name": "task-router-bot",
+  "version": "2.0.0",
+  "description": "Telegram ticket router bot with admin panel",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": ["telegram", "bot", "tickets", "router"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "grammy": "^1.25.0",
+    "better-sqlite3": "^11.0.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}
