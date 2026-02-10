@@ -20,7 +20,9 @@ async function handleChatReply(ctx) {
   const replyText = ctx.message.text || '[медіа]';
   const replierTgId = ctx.from?.id;
   const replierUser = replierTgId ? stmts.getUserByTgId.get(replierTgId) : null;
-  const replierName = (replierUser?.display_name) || ctx.from?.first_name || 'Підтримка';
+  const replierDisplayName = replierUser?.display_name || ctx.from?.first_name || 'Підтримка';
+  const replierUsername = replierUser?.username || ctx.from?.username || null;
+  const replierName = replierUsername ? `${replierDisplayName} (@${replierUsername})` : replierDisplayName;
 
   // Mark ticket as in_progress if it was open
   if (ticket.status === 'open') {
