@@ -951,9 +951,9 @@ async function handleTicketsMenu(ctx, text) {
     await ctx.reply(
       `📊 <b>Статистика тікетів</b>\n\n` +
       `📦 Всього: <b>${s.total}</b>\n` +
-      `🟢 Відкриті: <b>${s.open_count}</b>\n` +
+      `� Відкриті: <b>${s.open_count}</b>\n` +
       `🟡 В роботі: <b>${s.in_progress_count}</b>\n` +
-      `🔴 Закриті: <b>${s.closed_count}</b>`,
+      `🟢 Закриті: <b>${s.closed_count}</b>`,
       { parse_mode: 'HTML', reply_markup: kb.ADMIN_TICKETS }
     );
     return true;
@@ -972,14 +972,14 @@ async function handleTicketsMenu(ctx, text) {
   }
 
   // Filter by status
-  if (text === '🟢 Відкриті') {
-    return showTicketList(ctx, stmts.listTicketsByStatus.all('open'), '🟢 <b>Відкриті тікети</b>');
+  if (text === '� Відкриті') {
+    return showTicketList(ctx, stmts.listTicketsByStatus.all('open'), '🔴 <b>Відкриті тікети</b>');
   }
   if (text === '🟡 В роботі') {
     return showTicketList(ctx, stmts.listTicketsByStatus.all('in_progress'), '🟡 <b>Тікети в роботі</b>');
   }
-  if (text === '🔴 Закриті') {
-    return showTicketList(ctx, stmts.listTicketsByStatus.all('closed'), '🔴 <b>Закриті тікети</b>');
+  if (text === '🟢 Закриті') {
+    return showTicketList(ctx, stmts.listTicketsByStatus.all('closed'), '🟢 <b>Закриті тікети</b>');
   }
 
   // Filter by user

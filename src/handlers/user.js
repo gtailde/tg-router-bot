@@ -78,7 +78,7 @@ async function handleUserMain(ctx, text) {
       return true;
     }
 
-    const emoji = { open: '🟢', in_progress: '🟡', closed: '🔴' };
+    const emoji = { open: '�', in_progress: '🟡', closed: '🟢' };
     const kbList = new Keyboard();
     kbList.text('◀️ Назад').row();
     for (const t of tickets) {
@@ -207,7 +207,7 @@ async function handleConfirm(ctx, text) {
     closeKb.text('◀️ Назад').row();
     closeKb.resized().persistent();
 
-    const emoji = { open: '🟢', in_progress: '🟡', closed: '🔴' };
+    const emoji = { open: '🔴', in_progress: '🟡', closed: '🟢' };
     await ctx.reply(
       `${emoji[ticket.status] || '⚪'} <b>Тікет #${ticket.id}</b> — ${ticket.status}\n\n` +
       `📝 <b>${ticket.title}</b>\n${ticket.description || '—'}\n\n` +
@@ -236,7 +236,7 @@ async function handleTicketsList(ctx, text) {
   ctx.session.state = 'user:tickets:detail';
   ctx.session.draft.detailTicket = ticket;
 
-  const emoji = { open: '🟢', in_progress: '🟡', closed: '🔴' };
+  const emoji = { open: '�', in_progress: '🟡', closed: '🟢' };
   const actions = new Keyboard();
   if (ticket.status !== 'closed') actions.text('🔒 Закрити тікет').row();
   actions.text('◀️ Назад').row();
