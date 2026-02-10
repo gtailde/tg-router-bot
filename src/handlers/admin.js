@@ -433,9 +433,13 @@ async function handleUserDetail(ctx, text) {
   // Toggle role buttons
   if (text === '⬆️ Зробити адміном' || text === '⬇️ Зняти адміна') {
     const user = ctx.session.draft?.detailUser;
-    if (user && user.telegram_id) {
+    if (user) {
       const newRole = text.startsWith('⬆️') ? 'admin' : 'user';
-      stmts.setUserRole.run({ role: newRole, telegram_id: user.telegram_id });
+      if (user.telegram_id) {
+        stmts.setUserRole.run({ role: newRole, telegram_id: user.telegram_id });
+      } else {
+        stmts.setUserRoleById.run({ role: newRole, id: user.id });
+      }
       await ctx.reply(`✅ Роль змінено на <b>${newRole}</b>.`, { parse_mode: 'HTML' });
     }
     ctx.session.state = 'admin:users';

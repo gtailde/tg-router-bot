@@ -98,6 +98,7 @@ const stmts = {
   `),
   updateUserTgId: db.prepare('UPDATE users SET telegram_id = @telegram_id, first_name = @first_name WHERE id = @id'),
   setUserRole: db.prepare('UPDATE users SET role = @role WHERE telegram_id = @telegram_id'),
+  setUserRoleById: db.prepare('UPDATE users SET role = @role WHERE id = @id'),
   setDisplayName: db.prepare('UPDATE users SET display_name = @display_name WHERE id = @id'),
   deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
   getUserById: db.prepare('SELECT * FROM users WHERE id = ?'),
