@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Admin handlers — users, topics, chats, tickets management.
  * Uses session.state to track where admin is in the menu.
  * Admin does NOT create tickets.
@@ -926,7 +926,7 @@ async function showTicketList(ctx, tickets, headerText) {
     ctx.session.state = 'admin:tickets';
     return true;
   }
-  const emoji = { open: '🟢', in_progress: '🟡', closed: '🔴' };
+  const emoji = { open: '🔴', in_progress: '🟡', closed: '🟢' };
   const lines = tickets.map(t =>
     `${emoji[t.status] || '⚪'} #${t.id} — ${t.title.substring(0, 40)} (${t.author_display_name || t.author_first_name || '—'})`
   );
@@ -951,7 +951,7 @@ async function handleTicketsMenu(ctx, text) {
     await ctx.reply(
       `📊 <b>Статистика тікетів</b>\n\n` +
       `📦 Всього: <b>${s.total}</b>\n` +
-      `� Відкриті: <b>${s.open_count}</b>\n` +
+      `🔴 Відкриті: <b>${s.open_count}</b>\n` +
       `🟡 В роботі: <b>${s.in_progress_count}</b>\n` +
       `🟢 Закриті: <b>${s.closed_count}</b>`,
       { parse_mode: 'HTML', reply_markup: kb.ADMIN_TICKETS }
@@ -972,7 +972,7 @@ async function handleTicketsMenu(ctx, text) {
   }
 
   // Filter by status
-  if (text === '� Відкриті') {
+  if (text === '🔴 Відкриті') {
     return showTicketList(ctx, stmts.listTicketsByStatus.all('open'), '🔴 <b>Відкриті тікети</b>');
   }
   if (text === '🟡 В роботі') {
@@ -1078,7 +1078,7 @@ async function showAdminTicketDetail(ctx, ticketId) {
 
   ctx.session.draft.detailTicket = ticket;
   ctx.session.state = 'admin:tickets:detail';
-  const emoji = { open: '🟢', in_progress: '🟡', closed: '🔴' };
+  const emoji = { open: '🔴', in_progress: '🟡', closed: '🟢' };
 
   // Build ticket history
   const messages = stmts.listTicketMessages.all(ticket.id);
