@@ -670,9 +670,8 @@ async function handleTopicDetail(ctx, text) {
       return true;
     }
     const kbChats = new (require('grammy').Keyboard)();
-    kbChats.text('🚫 Без чату').row();
+    kbChats.text('❌ Скасувати').text('🚫 Без чату').row();
     for (const c of chats) kbChats.text(`💬 ${c.title || c.chat_id}`).row();
-    kbChats.text('❌ Скасувати').row();
     kbChats.resized().persistent();
     ctx.session.state = 'admin:topics:assign:chat';
     await ctx.reply('Оберіть чат для теми:', { reply_markup: kbChats });
@@ -688,10 +687,10 @@ async function handleTopicDetail(ctx, text) {
     const available = users.filter(u => !devIds.has(u.id));
     if (!available.length) { await ctx.reply('Всі користувачі вже призначені.'); return true; }
     const kbUsers = new (require('grammy').Keyboard)();
+    kbUsers.text('❌ Скасувати').row();
     for (const u of available) {
       kbUsers.text(`👤 @${u.username || u.telegram_id || u.id} (${u.display_name || u.first_name || '—'})`).row();
     }
-    kbUsers.text('❌ Скасувати').row();
     kbUsers.resized().persistent();
     ctx.session.state = 'admin:topics:add:dev';
     await ctx.reply('Оберіть розробника для теми:', { reply_markup: kbUsers });
@@ -703,10 +702,10 @@ async function handleTopicDetail(ctx, text) {
     const devs = stmts.listTopicDevs.all(ctx.session.draft.detailTopic.id);
     if (!devs.length) { await ctx.reply('Розробників не призначено.'); return true; }
     const kbDevs = new (require('grammy').Keyboard)();
+    kbDevs.text('❌ Скасувати').row();
     for (const d of devs) {
       kbDevs.text(`🗑 @${d.username || d.telegram_id || d.id} (${d.display_name || d.first_name || '—'})`).row();
     }
-    kbDevs.text('❌ Скасувати').row();
     kbDevs.resized().persistent();
     ctx.session.state = 'admin:topics:remove:dev';
     await ctx.reply('Оберіть розробника для видалення:', { reply_markup: kbDevs });
