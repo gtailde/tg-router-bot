@@ -788,7 +788,8 @@ async function handleTopicAddDev(ctx, text) {
 
   stmts.addTopicDev.run({ topic_id: ctx.session.draft.detailTopic.id, user_id: user.id });
   console.log(`[admin] Dev added to topic ${ctx.session.draft.detailTopic.id}: ${user.username || user.id}`);
-  await ctx.reply(`✅ <b>${user.display_name || user.first_name || user.username || '—'}</b> додано як розробника.`, { parse_mode: 'HTML' });
+  const userLabel = `@${user.username || user.telegram_id || user.id} (${user.display_name || user.first_name || '—'})`;
+  await ctx.reply(`✅ <b>${userLabel}</b> додано як розробника.`, { parse_mode: 'HTML' });
   return showTopicDetail(ctx, ctx.session.draft.detailTopic.id);
 }
 
@@ -805,7 +806,8 @@ async function handleTopicRemoveDev(ctx, text) {
 
   stmts.removeTopicDev.run({ topic_id: ctx.session.draft.detailTopic.id, user_id: user.id });
   console.log(`[admin] Dev removed from topic ${ctx.session.draft.detailTopic.id}: ${user.username || user.id}`);
-  await ctx.reply(`✅ <b>${user.display_name || user.first_name || user.username || '—'}</b> прибрано.`, { parse_mode: 'HTML' });
+  const userLabel = `@${user.username || user.telegram_id || user.id} (${user.display_name || user.first_name || '—'})`;
+  await ctx.reply(`✅ <b>${userLabel}</b> прибрано.`, { parse_mode: 'HTML' });
   return showTopicDetail(ctx, ctx.session.draft.detailTopic.id);
 }
 
