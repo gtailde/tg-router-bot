@@ -24,6 +24,12 @@ async function handleChatReply(ctx) {
   const replierUsername = replierUser?.username || ctx.from?.username || null;
   const replierName = replierUsername ? `${replierDisplayName} (@${replierUsername})` : replierDisplayName;
 
+  // If ticket is closed — notify developer and don't forward
+  if (ticket.status === 'closed') {
+    await ctx.reply(`🔒 Тікет #${ticket.id} вже закритий. Відповідь не доставлена.`);
+    return;
+  }
+
   // Mark ticket as in_progress if it was open
   if (ticket.status === 'open') {
     stmts.setTicketStatus.run({ status: 'in_progress', id: ticket.id });
@@ -46,7 +52,6 @@ async function handleChatReply(ctx) {
     await ctx.api.sendMessage(
       ticket.author_tg_id,
       `💬 <b>Відповідь на тікет #${ticket.id}</b>\n\n` +
-      `<b>${ticket.title}</b>\n\n` +
       `🗣 ${replierName}:\n${replyText}`,
       { parse_mode: 'HTML' }
     );
