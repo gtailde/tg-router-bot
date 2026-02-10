@@ -115,7 +115,7 @@ const stmts = {
     WHERE t.id = ?
   `),
   listTopicsWithChats: db.prepare(`
-    SELECT t.*, c.title AS chat_title
+    SELECT t.*, c.title AS chat_title, c.chat_id AS target_chat_id
     FROM topics t LEFT JOIN chats c ON t.chat_id = c.id
     ORDER BY t.name
   `),

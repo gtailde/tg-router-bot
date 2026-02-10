@@ -579,7 +579,7 @@ async function handleTopicsMenu(ctx, text) {
     if (!topics.length) { await ctx.reply('Тем ще немає.'); return true; }
 
     const lines = topics.map(t => {
-      const chatInfo = t.chat_title ? ` → 💬 ${t.chat_title}` : ' ⚠️ без чату';
+      const chatInfo = t.chat_title ? ` → 💬 <a href="https://t.me/c/${String(t.target_chat_id).slice(4)}">${t.chat_title}</a>` : ' ⚠️ без чату';
       return `📂 ${t.name}${chatInfo}`;
     });
     const kbList = new (require('grammy').Keyboard)();
@@ -588,7 +588,7 @@ async function handleTopicsMenu(ctx, text) {
     kbList.resized().persistent();
 
     ctx.session.state = 'admin:topics:detail';
-    await ctx.reply(lines.join('\n'), { reply_markup: kbList });
+    await ctx.reply(lines.join('\n'), { parse_mode: 'HTML', reply_markup: kbList });
     return true;
   }
 
@@ -728,7 +728,7 @@ async function showTopicDetail(ctx, topicId) {
   ctx.session.draft.detailTopic = topic;
   ctx.session.state = 'admin:topics:detail';
 
-  const chatInfo = topic.chat_title ? `💬 ${topic.chat_title}` : '⚠️ не призначено';
+  const chatInfo = topic.chat_title ? `💬 <a href="https://t.me/c/${String(topic.target_chat_id).slice(4)}">${topic.chat_title}</a>` : '⚠️ не призначено';
   const devInfo = devs.length
     ? devs.map(d => `  @${d.username || d.telegram_id || d.id} (${d.display_name || d.first_name || '—'})`).join('\n')
     : '  не призначено';
