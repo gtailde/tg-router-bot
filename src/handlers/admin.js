@@ -583,10 +583,8 @@ async function handleTopicsMenu(ctx, text) {
     if (!topics.length) { await ctx.reply('Тем ще немає.'); return true; }
 
     const lines = topics.map(t => {
-      if (!t.chat_title) return `📂 ${t.name} ⚠️ без чату`;
-      const cid = String(t.target_chat_id);
-      const linkId = cid.startsWith('-100') ? cid.slice(4) : cid.replace('-', '');
-      return `📂 ${t.name} → 💬 <a href="https://t.me/c/${linkId}">${t.chat_title}</a>`;
+      const chatInfo = t.chat_title ? ` → 💬 ${t.chat_title}` : ' ⚠️ без чату';
+      return `📂 ${t.name}${chatInfo}`;
     });
     const kbList = new (require('grammy').Keyboard)();
     kbList.text('◀️ Назад').row();
@@ -594,7 +592,7 @@ async function handleTopicsMenu(ctx, text) {
     kbList.resized().persistent();
 
     ctx.session.state = 'admin:topics:detail';
-    await ctx.reply(lines.join('\n'), { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, reply_markup: kbList });
+    await ctx.reply(lines.join('\n'), { reply_markup: kbList });
     return true;
   }
 
@@ -734,12 +732,7 @@ async function showTopicDetail(ctx, topicId) {
   ctx.session.draft.detailTopic = topic;
   ctx.session.state = 'admin:topics:detail';
 
-  let chatInfo = '⚠️ не призначено';
-  if (topic.chat_title) {
-    const cid = String(topic.target_chat_id);
-    const linkId = cid.startsWith('-100') ? cid.slice(4) : cid.replace('-', '');
-    chatInfo = `💬 <a href="https://t.me/c/${linkId}">${topic.chat_title}</a>`;
-  }
+  const chatInfo = topic.chat_title ? `💬 ${topic.chat_title}` : '⚠️ не призначено';
   const devInfo = devs.length
     ? devs.map(d => `  @${d.username || d.telegram_id || d.id} (${d.display_name || d.first_name || '—'})`).join('\n')
     : '  не призначено';
@@ -757,7 +750,7 @@ async function showTopicDetail(ctx, topicId) {
     `📝 ${topic.description || '(без опису)'}\n\n` +
     `💬 Чат: ${chatInfo}\n` +
     `👨‍💻 Розробники:\n${devInfo}`,
-    { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, reply_markup: detailKb }
+    { parse_mode: 'HTML', reply_markup: detailKb }
   );
   return true;
 }
