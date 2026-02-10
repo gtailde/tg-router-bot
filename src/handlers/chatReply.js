@@ -35,29 +35,32 @@ async function handleChatReply(ctx) {
     stmts.setTicketStatus.run({ status: 'in_progress', id: ticket.id });
   }
 
-  // Save the reply as a ticket message for further reply tracking
-  stmts.insertTicketMsg.run({
-    ticket_id: ticket.id,
-    sender_tg_id: ctx.from?.id || 0,
-    text: replyText,
-    user_dm_message_id: null,
-    chat_message_id: ctx.message.message_id,
-  });
-
   // Send reply to the user's DM
+  let dmMsgId = null;
   try {
-    await ctx.api.sendMessage(
+    const sent = await ctx.api.sendMessage(
       ticket.author_tg_id,
       `💬 <b>Відповідь на тікет #${ticket.id}</b>\n` +
-      `📂 ${ticket.title}\n\n` +
+      `📂 Тема: ${ticket.topic_name || '—'}\n` +
+      `📝 Заголовок: ${ticket.title}\n\n` +
       `🗣 ${replierName}:\n${replyText}`,
       { parse_mode: 'HTML' }
     );
+    dmMsgId = sent.message_id;
     await ctx.reply('✅ Відповідь доставлена користувачу.');
   } catch (e) {
     console.error('Failed to send reply to user:', e.message);
     await ctx.reply('❌ Не вдалося доставити відповідь користувачу.');
   }
+
+  // Save the reply as a ticket message (with DM message ID for user reply tracking)
+  stmts.insertTicketMsg.run({
+    ticket_id: ticket.id,
+    sender_tg_id: ctx.from?.id || 0,
+    text: replyText,
+    user_dm_message_id: dmMsgId,
+    chat_message_id: ctx.message.message_id,
+  });
 }
 
 module.exports = { handleChatReply };

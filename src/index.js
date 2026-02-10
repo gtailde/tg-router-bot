@@ -14,7 +14,7 @@ require('dotenv').config();
 const { Bot, session } = require('grammy');
 const { getOrCreateUser, linkUserTgId, addOrUpdateChat, stmts } = require('./database');
 const { handleAdmin, handleAdminForward, sendMain, isAdmin } = require('./handlers/admin');
-const { handleUser, sendUserMain, isUser } = require('./handlers/user');
+const { handleUser, handleUserReply, sendUserMain, isUser } = require('./handlers/user');
 const { handleChatReply } = require('./handlers/chatReply');
 // ==================== Config ==================== //
 
@@ -167,6 +167,12 @@ bot.on('message', async (ctx) => {
 
   // User handlers
   if (ctx.session.user.role === 'user') {
+    // Check if user is replying to a ticket notification in DM
+    if (ctx.message?.reply_to_message) {
+      const replied = await handleUserReply(ctx);
+      if (replied) return;
+    }
+
     const handled = await handleUser(ctx);
     if (handled) return;
 

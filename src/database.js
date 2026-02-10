@@ -243,20 +243,28 @@ const stmts = {
   `),
   findTicketByChatMsgId: db.prepare(`
     SELECT t.*, u.telegram_id AS author_tg_id, u.first_name AS author_first_name,
-           c.chat_id AS target_chat_id
+           tp.name AS topic_name, c.chat_id AS target_chat_id
     FROM tickets t
     LEFT JOIN users u ON t.author_id = u.id
+    LEFT JOIN topics tp ON t.topic_id = tp.id
     LEFT JOIN chats c ON t.chat_id = c.id
     WHERE t.chat_message_id = ?
   `),
   findTicketByTmChatMsgId: db.prepare(`
     SELECT t.*, u.telegram_id AS author_tg_id, u.first_name AS author_first_name,
-           c.chat_id AS target_chat_id
+           tp.name AS topic_name, c.chat_id AS target_chat_id
     FROM ticket_messages tm
     JOIN tickets t ON tm.ticket_id = t.id
     LEFT JOIN users u ON t.author_id = u.id
+    LEFT JOIN topics tp ON t.topic_id = tp.id
     LEFT JOIN chats c ON t.chat_id = c.id
     WHERE tm.chat_message_id = ?
+  `),
+  findTicketMsgByDmId: db.prepare(`
+    SELECT tm.ticket_id, tm.chat_message_id AS reply_chat_msg_id
+    FROM ticket_messages tm
+    WHERE tm.user_dm_message_id = ?
+    LIMIT 1
   `),
 };
 

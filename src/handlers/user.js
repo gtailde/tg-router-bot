@@ -284,4 +284,72 @@ async function handleTicketDetail(ctx, text) {
   return false;
 }
 
-module.exports = { handleUser, sendUserMain, isUser };
+// ==================== User Reply to Ticket ==================== //
+
+async function handleUserReply(ctx) {
+  if (!ctx.message?.reply_to_message) return false;
+  if (ctx.chat?.type !== 'private') return false;
+  if (!ctx.session?.user || ctx.session.user.role !== 'user') return false;
+
+  const repliedMsgId = ctx.message.reply_to_message.message_id;
+
+  // Check if the replied message is a ticket notification from the bot
+  const ticketMsg = stmts.findTicketMsgByDmId.get(repliedMsgId);
+  if (!ticketMsg) return false;
+
+  const ticket = stmts.getTicket.get(ticketMsg.ticket_id);
+  if (!ticket) return false;
+
+  // Verify this is the ticket author
+  if (ticket.author_tg_id !== ctx.from.id) return false;
+
+  // Check if ticket is closed
+  if (ticket.status === 'closed') {
+    await ctx.reply(`🔒 Тікет #${ticket.id} вже закритий. Відповідь не доставлена.`);
+    return true;
+  }
+
+  if (!ticket.target_chat_id) {
+    await ctx.reply('⚠️ Для цього тікета не знайдено чат підтримки.');
+    return true;
+  }
+
+  const text = ctx.message.text || '[медіа]';
+  const user = ctx.session.user;
+  const userName = user.display_name || user.first_name || '—';
+  const userUsername = user.username ? ` (@${user.username})` : '';
+
+  // Forward to group chat as reply to the developer's message
+  try {
+    const replyToChatMsgId = ticketMsg.reply_chat_msg_id || ticket.chat_message_id;
+    const sent = await ctx.api.sendMessage(
+      ticket.target_chat_id,
+      `👤 <b>Відповідь автора — тікет #${ticket.id}</b>\n\n` +
+      `🗣 ${userName}${userUsername}:\n${text}`,
+      {
+        parse_mode: 'HTML',
+        reply_parameters: replyToChatMsgId
+          ? { message_id: replyToChatMsgId, allow_sending_without_reply: true }
+          : undefined,
+      }
+    );
+
+    // Save message for reply tracking
+    stmts.insertTicketMsg.run({
+      ticket_id: ticket.id,
+      sender_tg_id: ctx.from.id,
+      text: text,
+      user_dm_message_id: null,
+      chat_message_id: sent.message_id,
+    });
+
+    await ctx.reply('✅ Вашу відповідь доставлено в чат підтримки.');
+  } catch (e) {
+    console.error('Failed to forward user reply to chat:', e.message);
+    await ctx.reply('❌ Не вдалося доставити відповідь.');
+  }
+
+  return true;
+}
+
+module.exports = { handleUser, handleUserReply, sendUserMain, isUser };
