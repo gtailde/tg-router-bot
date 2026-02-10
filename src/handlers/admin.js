@@ -46,10 +46,14 @@ async function handleAdmin(ctx) {
       return handleAddUser(ctx, text);
     case 'admin:users:add:role':
       return handleAddUserRole(ctx, text);
+    case 'admin:users:add:name':
+      return handleAddUserName(ctx, text);
     case 'admin:users:import':
       return handleBulkImportUsers(ctx, text);
     case 'admin:users:detail':
       return handleUserDetail(ctx, text);
+    case 'admin:users:delete':
+      return handleDeleteUser(ctx, text);
     case 'admin:users:setname':
       return handleSetDisplayName(ctx, text);
 
@@ -105,7 +109,7 @@ async function handleAdminForward(ctx) {
 
   ctx.session.draft.newUserTgId = fwd.id;
   ctx.session.draft.newUserUsername = fwd.username || null;
-  ctx.session.draft.newUserName = fwd.first_name || null;
+  ctx.session.draft.newUserName = [fwd.first_name, fwd.last_name].filter(Boolean).join(' ') || null;
   ctx.session.state = 'admin:users:add:role';
   await ctx.reply(
     `Знайдено: <b>${fwd.first_name || '—'}</b> (@${fwd.username || '—'})\nID: <code>${fwd.id}</code>\n\nОберіть роль:`,
@@ -243,25 +247,68 @@ async function handleAddUserRole(ctx, text) {
   else if (text === '👑 Admin') role = 'admin';
   else { await ctx.reply('Оберіть роль кнопкою.'); return true; }
 
-  const draft = ctx.session.draft;
+  ctx.session.draft.newUserRole = role;
+  ctx.session.state = 'admin:users:add:name';
 
+  const skipKb = new (require('grammy').Keyboard)()
+    .text('⏩ Пропустити').row()
+    .text('❌ Скасувати').row()
+    .resized().persistent();
+
+  const draft = ctx.session.draft;
+  const hint = draft.newUserName ? `\nІмʼя з профілю: <b>${draft.newUserName}</b>` : '';
+  await ctx.reply(
+    `Введіть відображуване імʼя для @${draft.newUserUsername || draft.newUserTgId || '—'}:${hint}\n\n` +
+    `(або натисніть «⏩ Пропустити» — імʼя буде взято автоматично)`,
+    { parse_mode: 'HTML', reply_markup: skipKb }
+  );
+  return true;
+}
+
+async function handleAddUserName(ctx, text) {
+  if (text === '❌ Скасувати') {
+    ctx.session.state = 'admin:users';
+    await ctx.reply('👥 <b>Користувачі</b>', { parse_mode: 'HTML', reply_markup: kb.ADMIN_USERS });
+    return true;
+  }
+
+  const draft = ctx.session.draft;
+  const role = draft.newUserRole;
+  let displayName = null;
+
+  if (text === '⏩ Пропустити') {
+    // Auto-resolve name: from TG profile → from username → fallback
+    displayName = draft.newUserName || null;
+  } else {
+    displayName = text.trim();
+  }
+
+  // Create user
+  let user;
   if (draft.newUserTgId) {
-    // We have telegram_id from forwarded message
-    getOrCreateUser(draft.newUserTgId, draft.newUserUsername, draft.newUserName, role);
-    // Ensure role is set
+    user = getOrCreateUser(draft.newUserTgId, draft.newUserUsername, draft.newUserName, role);
     stmts.setUserRole.run({ role, telegram_id: draft.newUserTgId });
     console.log(`[admin] User added: ${draft.newUserTgId} (${draft.newUserUsername}) as ${role}`);
   } else {
-    // Only username — create placeholder
-    addUserByUsername(draft.newUserUsername, role);
+    user = addUserByUsername(draft.newUserUsername, role);
     console.log(`[admin] Placeholder user added: ${draft.newUserUsername} as ${role}`);
+  }
+
+  // Set display name
+  if (user && displayName) {
+    stmts.setDisplayName.run({ display_name: displayName, id: user.id });
+  } else if (user && !displayName && !user.first_name) {
+    // No name at all — generate from username
+    const fallback = draft.newUserUsername || `User ${user.id}`;
+    stmts.setDisplayName.run({ display_name: fallback, id: user.id });
+    displayName = fallback;
   }
 
   ctx.session.state = 'admin:users';
   ctx.session.draft = {};
   const label = draft.newUserTgId
-    ? `${draft.newUserName || ''} (@${draft.newUserUsername || '—'}) [${draft.newUserTgId}]`
-    : `@${draft.newUserUsername}`;
+    ? `${displayName || draft.newUserName || '—'} (@${draft.newUserUsername || '—'}) [${draft.newUserTgId}]`
+    : `@${draft.newUserUsername} (${displayName || '—'})`;
   await ctx.reply(
     `✅ Користувач ${label} додано з роллю <b>${role}</b>.\n` +
     (draft.newUserTgId ? '' : '⏳ Він зʼявиться в системі коли натисне /start.'),
@@ -396,6 +443,23 @@ async function handleUserDetail(ctx, text) {
     return true;
   }
 
+  // Delete button
+  if (text === '🗑 Видалити') {
+    const user = ctx.session.draft?.detailUser;
+    if (!user) return false;
+    ctx.session.state = 'admin:users:delete';
+    const confirmKb = new (require('grammy').Keyboard)()
+      .text('✅ Так, видалити').text('❌ Ні, скасувати').row()
+      .resized().persistent();
+    const name = user.display_name || user.first_name || user.username || '—';
+    await ctx.reply(
+      `⚠️ <b>Ви впевнені?</b>\n\nВидалити користувача <b>${name}</b> (@${user.username || '—'})?\n\n` +
+      `Це також видалить усі його призначення до тем.`,
+      { parse_mode: 'HTML', reply_markup: confirmKb }
+    );
+    return true;
+  }
+
   // Rename button
   if (text === '✏️ Назвати') {
     const user = ctx.session.draft?.detailUser;
@@ -425,6 +489,7 @@ async function handleUserDetail(ctx, text) {
   const toggleKb = new (require('grammy').Keyboard)()
     .text(toggleLabel).row()
     .text('✏️ Назвати').row()
+    .text('🗑 Видалити').row()
     .text('◀️ Назад').row()
     .resized().persistent();
 
@@ -462,6 +527,39 @@ async function handleSetDisplayName(ctx, text) {
   ctx.session.state = 'admin:users';
   await ctx.reply('👥 <b>Користувачі</b>', { parse_mode: 'HTML', reply_markup: kb.ADMIN_USERS });
   return true;
+}
+
+async function handleDeleteUser(ctx, text) {
+  if (text === '❌ Ні, скасувати') {
+    ctx.session.state = 'admin:users';
+    await ctx.reply('👥 <b>Користувачі</b>', { parse_mode: 'HTML', reply_markup: kb.ADMIN_USERS });
+    return true;
+  }
+
+  if (text === '✅ Так, видалити') {
+    const user = ctx.session.draft?.detailUser;
+    if (!user) { await sendMain(ctx); return true; }
+
+    const name = user.display_name || user.first_name || user.username || '—';
+    try {
+      stmts.deleteUser.run(user.id);
+      console.log(`[admin] User deleted: ${user.id} (${name})`);
+      await ctx.reply(
+        `🗑 Користувача <b>${name}</b> (@${user.username || '—'}) видалено.`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (e) {
+      console.error('[admin] Delete user error:', e.message);
+      await ctx.reply(`❌ Помилка видалення: ${e.message}`);
+    }
+
+    ctx.session.state = 'admin:users';
+    ctx.session.draft = {};
+    await ctx.reply('👥 <b>Користувачі</b>', { parse_mode: 'HTML', reply_markup: kb.ADMIN_USERS });
+    return true;
+  }
+
+  return false;
 }
 
 // ==================== Topics ==================== //
