@@ -31,15 +31,19 @@ const ADMIN_IDS = (process.env.ADMIN_IDS || '')
 
 const bot = new Bot(BOT_TOKEN);
 
-// Session middleware — stores state per chat
-bot.use(session({
+// Session middleware — stores state per chat (skip for groups — not needed)
+const sessionMiddleware = session({
   initial: () => ({
     user: null,   // DB user object
     state: null,  // current menu state
     step: null,   // sub-step
     draft: {},    // temp data for FSM
   }),
-}));
+});
+bot.use(async (ctx, next) => {
+  if (ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup') return next();
+  return sessionMiddleware(ctx, next);
+});
 
 // ==================== Auth middleware ==================== //
 
@@ -197,7 +201,7 @@ async function main() {
 
   // Start polling
   await bot.start({
-    allowed_updates: ['message', 'my_chat_member', 'chat_member'],
+    allowed_updates: ['message', 'my_chat_member'],
     onStart: (me) => {
       console.log(`Bot started: @${me.username} (id=${me.id})`);
     },

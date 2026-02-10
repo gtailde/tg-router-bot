@@ -83,6 +83,14 @@ db.exec(`
   );
 `);
 
+// Indexes for fast message lookups (idempotent)
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_tickets_chat_msg ON tickets(chat_message_id);
+  CREATE INDEX IF NOT EXISTS idx_tm_chat_msg ON ticket_messages(chat_message_id);
+  CREATE INDEX IF NOT EXISTS idx_tm_dm_msg ON ticket_messages(user_dm_message_id);
+  CREATE INDEX IF NOT EXISTS idx_tm_ticket ON ticket_messages(ticket_id);
+`);
+
 // ==================== Users ==================== //
 
 const stmts = {
